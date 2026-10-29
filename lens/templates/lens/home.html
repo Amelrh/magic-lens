@@ -2,11 +2,78 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La Loupe Magique</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'lens/css/style.css' %}">
 </head>
-<body style="background:#0f172a;color:white;font-family:sans-serif;text-align:center;padding-top:100px">
-  <h1>🤖 Ça marche !</h1>
-  <p>Si tu vois ce texte, le template est bien chargé.</p>
-  <a href="/play/" style="color:#38bdf8">Aller à Play</a>
+<body class="home-body">
+  <div id="sparks" aria-hidden="true"></div>
+
+  <div class="home-screen">
+    <header class="home-top">
+      <div class="home-brand">
+        <span class="brand-plus">+</span>
+        <span>La Loupe Magique</span>
+      </div>
+      <div class="home-step">ÉTAPE 1 / 4</div>
+    </header>
+
+    <hr class="home-line">
+
+    <main class="home-main">
+      <div class="home-left">
+        <p class="home-eyebrow">
+          <span class="brand-plus">+</span> ATELIER DES PIXELS
+        </p>
+        <h1 class="home-title">
+          La Loupe<br>
+          <span class="home-title-accent">Magique</span>
+        </h1>
+        <p class="home-desc">
+          Découvre comment les robots<br>
+          voient le monde, une case à la fois.
+        </p>
+        <a class="btn-start" href="{% url 'lens:play' %}">Commencer →</a>
+      </div>
+
+      <div class="home-right">
+        <div class="home-illustration">
+          <img
+            src="{% static 'lens/img/robot-home.png' %}"
+            alt="Robot avec une loupe — La Loupe Magique"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="robot-fallback" style="display:none">🤖🔍</div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="home-foot">
+      <span class="foot-left">APPRENDRE EN JOUANT</span>
+      <span class="foot-dots">
+        <i class="dot active"></i>
+        <i class="dot"></i>
+        <i class="dot"></i>
+        <i class="dot"></i>
+      </span>
+      <span class="foot-right">© 2026</span>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var box = document.getElementById("sparks");
+      if (!box) return;
+      var types = ["dot", "star", "plus"];
+      for (var i = 0; i < 12; i++) {
+        var s = document.createElement("div");
+        s.className = "spark " + types[i % 3];
+        s.style.left = Math.random() * 100 + "%";
+        s.style.animationDuration = (7 + Math.random() * 8) + "s";
+        s.style.animationDelay = (Math.random() * 6) + "s";
+        box.appendChild(s);
+      }
+    })();
+  </script>
 </body>
 </html>

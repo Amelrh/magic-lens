@@ -2,301 +2,179 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Jouer — La Loupe Magique</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'lens/css/style.css' %}">
+  {% csrf_token %}
 </head>
 <body>
-  <h1>La Loupe Magique</h1>
-  <p><a href="{% url 'lens:home' %}">← Accueil</a></p>
+  <div id="sparks" aria-hidden="true"></div>
 
-  <p>
-    <button type="button" onclick="goTab('draw')">① Dessine</button>
-    <button type="button" onclick="goTab('lens')">② Choisis une loupe</button>
-    <button type="button" onclick="goTab('game')">③ Mini-jeu</button>
-    <button type="button" onclick="goTab('board')">Classement</button>
-  </p>
+  <div class="play-page">
 
-  <!-- DESSIN -->
-  <div id="panel-draw">
-    <h2>Crée ton image (8×8)</h2>
-    <div id="draw-grid"></div>
-    <p>
-      <button type="button" onclick="setColor(0)">Noir</button>
-      <button type="button" onclick="setColor(85)">Foncé</button>
-      <button type="button" onclick="setColor(170)">Clair</button>
-      <button type="button" onclick="setColor(255)">Blanc</button>
-      <button type="button" onclick="clearGrid()">Effacer</button>
-    </p>
-    <p>
-      Modèles :
-      {% for d in drawings %}
-        <button type="button" class="template-btn" data-id="{{ d.id }}">{{ d.title }}</button>
-      {% empty %}
-        <span>Lance python manage.py seed</span>
-      {% endfor %}
-    </p>
-    <button type="button" onclick="goTab('lens')">Continuer →</button>
-  </div>
+    <header class="play-header">
+      <h1><span class="brand-plus">+</span> La Loupe Magique</h1>
+      <a href="{% url 'lens:home' %}">← Accueil</a>
+    </header>
 
-  <!-- LOUPE -->
-  <div id="panel-lens" style="display:none">
-    <h2>Choisis une loupe</h2>
-    <div>
-      {% for lens in lenses %}
-        <button type="button" class="lens-btn" data-id="{{ lens.id }}">
-          {{ lens.icon }} {{ lens.name }} — {{ lens.short_description }}
-        </button>
-      {% empty %}
-        <p>Aucune loupe. Lance python manage.py seed</p>
-      {% endfor %}
-    </div>
-    <p>Avant :</p>
-    <div id="before-grid"></div>
-    <p id="bubble">Choisis une loupe</p>
-    <p>Après :</p>
-    <div id="after-grid"></div>
-    <button type="button" id="apply-btn" onclick="applySelectedLens()" disabled>Appliquer la loupe</button>
-  </div>
+    <nav class="tabs">
+      <button type="button" class="tab active" data-tab="draw">
+        <span class="tab-icon">🎨</span>
+        Dessine
+      </button>
+      <button type="button" class="tab" data-tab="lens">
+        <span class="tab-icon">🔍</span>
+        Loupe
+      </button>
+      <button type="button" class="tab" data-tab="game">
+        <span class="tab-icon">🎮</span>
+        Mini-jeu
+      </button>
+      <button type="button" class="tab" data-tab="board">
+        <span class="tab-icon">🏆</span>
+        Classement
+      </button>
+    </nav>
 
-  <!-- MINI-JEU -->
-  <div id="panel-game" style="display:none">
-    <div id="game-setup">
-      <h2>Devine la Loupe</h2>
-      <input type="text" id="player-name" placeholder="Ton pseudo" maxlength="30">
-      <button type="button" onclick="startGame()">Démarrer</button>
-      <p id="setup-msg"></p>
+    <div id="panel-draw" class="panel active">
+      <div class="panel-card">
+        <h2>Dessine ton image</h2>
+        <div class="grid-center">
+          <div class="grid-wrap"><div id="draw-grid"></div></div>
+        </div>
+        <div class="colors">
+          <button type="button" class="color-btn" data-color="0" title="Noir"></button>
+          <button type="button" class="color-btn" data-color="85" title="Jaune"></button>
+          <button type="button" class="color-btn" data-color="170" title="Rose"></button>
+          <button type="button" class="color-btn" data-color="255" title="Bleu"></button>
+          <button type="button" id="clear-btn" class="btn-secondary">Effacer</button>
+        </div>
+        <p class="muted" style="margin-bottom:0.4rem">Modèles</p>
+        <div class="templates">
+          {% for d in drawings %}
+            <button type="button" class="template-btn" data-id="{{ d.id }}" title="{{ d.title }}">
+              {% if "Smiley" in d.title %}😊
+              {% elif "Maison" in d.title %}🏠
+              {% elif "Cœur" in d.title or "Coeur" in d.title %}❤️
+              {% else %}🎨{% endif %}
+            </button>
+          {% empty %}
+            <span class="muted">Lance <code>python manage.py seed</code></span>
+          {% endfor %}
+        </div>
+        <button type="button" class="btn-primary" data-goto="lens">Suivant →</button>
+      </div>
     </div>
 
-    <div id="game-play" style="display:none">
-      <p>Question <span id="q-num">1</span> / 5 — Score : <span id="score">0</span></p>
-      <p>Image d’origine :</p>
-      <div id="game-orig"></div>
-      <p>Résultat :</p>
-      <div id="game-result"></div>
-      <p>Quelle loupe ?</p>
-      <div id="choices"></div>
-      <p id="answer-msg"></p>
-      <button type="button" id="next-btn" style="display:none" onclick="nextQuestion()">Question suivante →</button>
+    <div id="panel-lens" class="panel">
+      <div class="panel-card">
+        <h2>Choisis ta loupe</h2>
+        <div class="lens-grid">
+          {% for lens in lenses %}
+            <button type="button" class="lens-card" data-id="{{ lens.id }}">
+              <span class="icon">{{ lens.icon }}</span>
+              <span class="name">{{ lens.name|cut:"Loupe " }}</span>
+              <span class="desc">{{ lens.short_description }}</span>
+            </button>
+          {% empty %}
+            <p class="muted">Aucune loupe. Lance <code>python manage.py seed</code></p>
+          {% endfor %}
+        </div>
+        <button type="button" class="btn-primary" id="apply-btn" disabled>✨ Appliquer la loupe</button>
+
+        <div id="anim-zone" class="anim-zone hidden">
+          <div class="anim-pair">
+            <div>
+              <div class="anim-label">Image d'origine</div>
+              <div class="grid-wrap"><div id="before-grid"></div></div>
+            </div>
+            <div>
+              <div class="anim-label">Nouvelle image</div>
+              <div class="grid-wrap"><div id="after-grid"></div></div>
+            </div>
+          </div>
+          <div id="bubble" class="bubble">Je mélange ces 9 pixels…</div>
+          <div class="anim-controls">
+            <button type="button" class="btn-secondary" id="btn-pause">⏸ Pause</button>
+            <button type="button" class="btn-secondary" id="btn-speed">⚡ Rapide</button>
+          </div>
+          <div class="compare-labels">
+            <span>Avant</span>
+            <span>Après</span>
+          </div>
+          <div id="compare-wrap" class="compare-wrap hidden"></div>
+        </div>
+      </div>
     </div>
 
-    <div id="game-end" style="display:none">
-      <h2>Partie terminée !</h2>
-      <p id="final-score">0 pts</p>
-      <p>Bravo <span id="final-name"></span> !</p>
-      <button type="button" onclick="resetGame()">Rejouer</button>
-      <button type="button" onclick="goTab('board')">Classement</button>
+    <div id="panel-game" class="panel">
+      <div class="panel-card">
+        <h2>Devine la Loupe</h2>
+        <div id="game-setup">
+          <p class="muted">5 questions · plus tu es rapide, plus tu gagnes de points</p>
+          <input type="text" id="player-name" placeholder="Ton pseudo" maxlength="30" autocomplete="off">
+          <button type="button" class="btn-primary" id="start-game-btn">🚀 Lancer la partie</button>
+        </div>
+        <div id="game-play" class="hidden">
+          <p class="score-line">
+            Question <strong id="q-num">1</strong>/5 · Score : <strong id="score">0</strong>
+          </p>
+          <p class="muted">Quelle loupe a produit cette image ?</p>
+          <div class="grid-center">
+            <div class="grid-wrap"><div id="result-grid"></div></div>
+          </div>
+          <div class="choices" id="choices"></div>
+          <div id="game-feedback"></div>
+          <button type="button" id="next-btn" class="btn-primary hidden">Question suivante →</button>
+        </div>
+        <div id="game-end" class="hidden">
+          <div class="confetti">🎉</div>
+          <h2>Partie terminée !</h2>
+          <p class="score-line">Score final : <strong id="final-score">0</strong> pts</p>
+          <div class="actions-row">
+            <button type="button" class="btn-primary" id="replay-btn">🔄 Rejouer</button>
+            <button type="button" class="btn-secondary" data-goto="board">🏆 Classement</button>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <div id="panel-board" class="panel">
+      <div class="panel-card">
+        <h2>🏆 Classement</h2>
+        <p class="muted" id="board-empty">Chargement…</p>
+        <table class="board hidden" id="board-table">
+          <thead>
+            <tr><th>#</th><th>Joueur</th><th>Points</th><th>Date</th></tr>
+          </thead>
+          <tbody id="board-body"></tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
-  <!-- CLASSEMENT -->
-  <div id="panel-board" style="display:none">
-    <h2>Classement</h2>
-    <table border="1">
-      <thead><tr><th>#</th><th>Joueur</th><th>Points</th><th>Date</th></tr></thead>
-      <tbody id="lb-body"><tr><td colspan="4">Chargement…</td></tr></tbody>
-    </table>
-    <button type="button" onclick="loadLeaderboard()">Actualiser</button>
-  </div>
-
-<script>
-function getCookie(name) {
-  const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-  return v ? v.pop() : '';
-}
-const csrftoken = getCookie('csrftoken');
-
-let currentColor = 255;
-let pixels = Array.from({length: 8}, () => Array(8).fill(0));
-let selectedLensId = null;
-let gameId = null, questions = [], qIndex = 0, totalPoints = 0, qStart = 0;
-
-function goTab(name) {
-  ['draw', 'lens', 'game', 'board'].forEach(n => {
-    document.getElementById('panel-' + n).style.display = (n === name) ? 'block' : 'none';
-  });
-  if (name === 'lens') renderGrid('before-grid', pixels);
-  if (name === 'board') loadLeaderboard();
-}
-
-function gray(v) { return 'rgb(' + v + ',' + v + ',' + v + ')'; }
-
-function renderGrid(elId, data, interactive) {
-  const el = document.getElementById(elId);
-  el.innerHTML = '';
-  const table = document.createElement('table');
-  table.border = 1;
-  for (let y = 0; y < 8; y++) {
-    const tr = document.createElement('tr');
-    for (let x = 0; x < 8; x++) {
-      const td = document.createElement('td');
-      td.style.width = '24px';
-      td.style.height = '24px';
-      td.style.background = gray(data[y][x]);
-      if (interactive) {
-        td.style.cursor = 'pointer';
-        td.onclick = function () {
-          pixels[y][x] = currentColor;
-          td.style.background = gray(currentColor);
-        };
+  <script>
+    window.CSRF_TOKEN = document.querySelector("[name=csrfmiddlewaretoken]")
+      ? document.querySelector("[name=csrfmiddlewaretoken]").value
+      : "";
+  </script>
+  <script src="{% static 'lens/js/play.js' %}"></script>
+  <script>
+    (function () {
+      var box = document.getElementById("sparks");
+      if (!box) return;
+      var types = ["dot", "star", "plus"];
+      for (var i = 0; i < 10; i++) {
+        var s = document.createElement("div");
+        s.className = "spark " + types[i % 3];
+        s.style.left = Math.random() * 100 + "%";
+        s.style.animationDuration = (7 + Math.random() * 9) + "s";
+        s.style.animationDelay = (Math.random() * 7) + "s";
+        box.appendChild(s);
       }
-      tr.appendChild(td);
-    }
-    table.appendChild(tr);
-  }
-  el.appendChild(table);
-}
-
-function setColor(c) { currentColor = c; }
-
-function clearGrid() {
-  pixels = Array.from({length: 8}, () => Array(8).fill(0));
-  renderGrid('draw-grid', pixels, true);
-}
-
-async function loadTemplate(id) {
-  const r = await fetch('/api/drawing/' + id + '/');
-  const d = await r.json();
-  if (d.pixels) {
-    pixels = d.pixels;
-    renderGrid('draw-grid', pixels, true);
-  }
-}
-renderGrid('draw-grid', pixels, true);
-
-// Boutons "Modèles" (id lu depuis data-id, plus de Django dans le JS)
-document.querySelectorAll('.template-btn').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    loadTemplate(btn.dataset.id);
-  });
-});
-
-// Boutons "Loupes"
-document.querySelectorAll('.lens-btn').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    selectLens(btn.dataset.id);
-  });
-});
-
-function selectLens(id) {
-  selectedLensId = id;
-  document.getElementById('apply-btn').disabled = false;
-}
-
-async function applySelectedLens() {
-  if (!selectedLensId) return;
-  const r = await fetch('/api/apply/', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
-    body: JSON.stringify({lens_id: selectedLensId, pixels: pixels})
-  });
-  const d = await r.json();
-  if (!d.success) { alert(d.error || 'Erreur'); return; }
-  renderGrid('before-grid', pixels);
-  renderGrid('after-grid', d.pixels);
-  document.getElementById('bubble').textContent = d.bubble_text || 'Résultat';
-}
-
-async function startGame() {
-  const name = document.getElementById('player-name').value.trim();
-  const msg = document.getElementById('setup-msg');
-  if (!name) { msg.textContent = 'Entre un pseudo.'; return; }
-  const r = await fetch('/api/game/start/', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
-    body: JSON.stringify({player_name: name})
-  });
-  const d = await r.json();
-  if (!d.success) { msg.textContent = d.error || 'Erreur'; return; }
-  gameId = d.game_id;
-  questions = d.questions;
-  qIndex = 0;
-  totalPoints = 0;
-  document.getElementById('game-setup').style.display = 'none';
-  document.getElementById('game-end').style.display = 'none';
-  document.getElementById('game-play').style.display = 'block';
-  showQuestion();
-}
-
-function showQuestion() {
-  const q = questions[qIndex];
-  document.getElementById('q-num').textContent = qIndex + 1;
-  document.getElementById('score').textContent = totalPoints;
-  renderGrid('game-orig', q.original_pixels || q.result_pixels);
-  renderGrid('game-result', q.result_pixels);
-  const box = document.getElementById('choices');
-  box.innerHTML = '';
-  q.choices.forEach(function (c) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = c.icon + ' ' + c.name;
-    btn.onclick = function () { submitAnswer(c.id); };
-    box.appendChild(btn);
-  });
-  document.getElementById('answer-msg').textContent = '';
-  document.getElementById('next-btn').style.display = 'none';
-  qStart = Date.now();
-}
-
-async function submitAnswer(lensId) {
-  if (document.getElementById('next-btn').style.display !== 'none') return;
-  const seconds = (Date.now() - qStart) / 1000;
-  const r = await fetch('/api/game/answer/', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
-    body: JSON.stringify({
-      game_id: gameId,
-      question_index: qIndex,
-      chosen_lens_id: lensId,
-      seconds: seconds
-    })
-  });
-  const d = await r.json();
-  if (!d.success) {
-    document.getElementById('answer-msg').textContent = d.error;
-    return;
-  }
-  totalPoints = d.total_points;
-  document.getElementById('score').textContent = totalPoints;
-  if (d.is_correct) {
-    document.getElementById('answer-msg').textContent = '✓ Bravo ! +' + d.points + ' pts';
-  } else {
-    document.getElementById('answer-msg').textContent =
-      '✗ C’était ' + d.correct_lens.icon + ' ' + d.correct_lens.name;
-  }
-  document.getElementById('next-btn').style.display = 'inline';
-}
-
-function nextQuestion() {
-  qIndex++;
-  if (qIndex >= 5) {
-    document.getElementById('game-play').style.display = 'none';
-    document.getElementById('game-end').style.display = 'block';
-    document.getElementById('final-score').textContent = totalPoints + ' pts';
-    document.getElementById('final-name').textContent =
-      document.getElementById('player-name').value.trim();
-  } else {
-    showQuestion();
-  }
-}
-
-function resetGame() {
-  document.getElementById('game-end').style.display = 'none';
-  document.getElementById('game-setup').style.display = 'block';
-  document.getElementById('setup-msg').textContent = '';
-}
-
-async function loadLeaderboard() {
-  const r = await fetch('/api/game/leaderboard/');
-  const d = await r.json();
-  const body = document.getElementById('lb-body');
-  if (!d.success || !d.leaderboard.length) {
-    body.innerHTML = '<tr><td colspan="4">Aucune partie terminée</td></tr>';
-    return;
-  }
-  body.innerHTML = d.leaderboard.map(function (g, i) {
-    return '<tr><td>' + (i + 1) + '</td><td>' + g.player_name +
-           '</td><td>' + g.points + '</td><td>' + g.date + '</td></tr>';
-  }).join('');
-}
-</script>
+    })();
+  </script>
 </body>
 </html>
