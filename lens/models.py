@@ -58,7 +58,7 @@ class MagicLens(models.Model):
 
 
 class Drawing(models.Model):
-    """Image 8×8 en niveaux de gris (0 = noir, 255 = blanc)."""
+
     title = models.CharField("Titre", max_length=100)
     pixels = models.JSONField(validators=[validate_pixels])
     is_template = models.BooleanField("Modèle pré-fait", default=True)
@@ -78,6 +78,8 @@ class Game(models.Model):
     """Une partie de 5 questions."""
     player_name = models.CharField("Pseudo", max_length=30)
     points = models.PositiveIntegerField(default=0)
+    # Stocke les 5 questions côté serveur 
+    questions = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -92,6 +94,7 @@ class Game(models.Model):
 class Attempt(models.Model):
     """Une réponse du joueur à une question."""
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="attempts")
+    question_index = models.PositiveSmallIntegerField(default=0)   
     drawing = models.ForeignKey(Drawing, on_delete=models.PROTECT, related_name="attempts")
     target_lens = models.ForeignKey(MagicLens, on_delete=models.PROTECT,
                                     related_name="as_target")
@@ -102,9 +105,13 @@ class Attempt(models.Model):
     seconds = models.FloatField("Temps de réponse (s)")
     points = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
     class Meta:
         ordering = ["created_at"]
+        constraints = [                                            
+            models.UniqueConstraint(fields=["game", "question_index"],
+                                    name="one_answer_per_question")
+        ]
         verbose_name = "Réponse"
         verbose_name_plural = "Réponses"
 
